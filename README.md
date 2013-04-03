@@ -14,4 +14,4 @@ There are still a few bugs that I've found:
 
 If you find any other bugs or have a solution to the ones above please let me know!
 
-- Tom
+Tom
