@@ -12,8 +12,9 @@
 			   this.elementId = id;
           }
 		  
-		  public function getId():String {
-			  return elementId;
-		  }
+	  public function getId():String
+          {
+               return elementId;
+	  }
      }
 }
