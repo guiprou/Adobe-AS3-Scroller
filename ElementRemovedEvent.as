@@ -9,7 +9,7 @@
           {
                //we call the super class Event
                super(type, bubbles, cancelable);
-			   this.elementId = id;
+               this.elementId = id;
           }
 		  
 	  public function getId():String
