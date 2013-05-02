@@ -36,7 +36,7 @@
 			addEventListener(Event.ADDED_TO_STAGE, function(e:Event){init(e, speed, spacing);});
 		}
 		
-		private function init(e:Event, speed, spacing)
+		private function init(e:Event, speed:Number, spacing:Number)
 		{
 			setSpeed(speed);
 			setSpacing(spacing);
@@ -104,7 +104,7 @@
 			this.running = true;
 		}
 		
-		public function stop(immediately=false):void
+		public function stop(immediately:Boolean=false):void
 		{
 			if (!getIsRunning())
 			{
