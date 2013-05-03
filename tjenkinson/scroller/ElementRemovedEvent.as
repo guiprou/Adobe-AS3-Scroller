@@ -1,4 +1,4 @@
-﻿package
+﻿package tjenkinson.scroller
 {
      import flash.events.Event;
      public class ElementRemovedEvent extends Event

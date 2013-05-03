@@ -3,6 +3,8 @@
 	import flash.display.MovieClip;
 	import flash.geom.Rectangle;
 	import flash.events.Event;
+	import tjenkinson.scroller.Scroller;
+	import tjenkinson.scroller.ElementRemovedEvent;
 	
 	
 	public class demo extends MovieClip {
