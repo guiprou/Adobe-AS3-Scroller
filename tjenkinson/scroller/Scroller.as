@@ -307,7 +307,7 @@
 			this.onScreen = found;
 		}
 		
-		private function getArrayIndex(id:int)
+		private function getArrayIndex(id:int):int
 		{
 			for (var i:int=0; i<elements.length; i++)
 			{
