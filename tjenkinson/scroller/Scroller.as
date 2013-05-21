@@ -172,6 +172,25 @@
 		{
 			return this.running;
 		}
+		
+		public function getActualWidth():Number
+		{
+			var lastElement:DisplayObject = null;
+			for (var i:String in this.elements)
+			{
+				if (this.elements[i].onScreen)
+				{
+					lastElement = this.elements[i].element;
+				}
+			}
+			if (lastElement == null) {
+				return 0;
+			}
+			else {
+				var val:Number = lastElement.x + lastElement.width;
+				return val > theWidth ? theWidth : val;
+			}
+		}
 	
 		// runs on each frame
 		private function timerTick(e:Event):void
@@ -237,6 +256,7 @@
 						{
 							// set the position off screen to start
 							nextElement.element.x = this.theWidth;
+							nextElement.element.cacheAsBitmap=true;
 							nextElement.onScreen = true;
 							this.addChildAt(nextElement.element,0);
 							this.onScreen = true; // update global on screen status
