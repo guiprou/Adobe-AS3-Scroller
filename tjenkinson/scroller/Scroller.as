@@ -14,12 +14,14 @@
 		private var speed:Number; // pixels per second
 		private var moveAmount:Number; //speed / framerate
 		private var lastElementId:int; // this will always increase so there will always be unique ids
-		private var noElements:int = 0;
+		private var noElements:int = 0; // count of no of elements that have ever been. always increasing
 		private var onScreen:Boolean = false; // true if there is anything on screen (even if leaving)
 		private var running:Boolean = false; // true after start called, false after stopped called
 		private var stopImmediatey:Boolean = false;
 		private var spacing:Number; // spacing between clips (pixels)
 		private var theMask:Shape;
+		private var nextElementMustShow:Boolean = false;
+		private var justStarted:Boolean = false;
 		
 		// events
 		public static const NO_MORE_ELEMENTS:String = "NO_MORE_ELEMENTS"; // stopped automatically bevause ran out of elements
@@ -57,10 +59,10 @@
 			theMask.graphics.endFill();
 		}
 	
-		public function addElement(element:DisplayObject):int
+		public function addElement(element:DisplayObject, mustShow:Boolean=false, ignoreIfFirst:Boolean=false):int
 		{
 			var id:int = (getNoElements() !== 0) ? getLastElementId()+1 : 0;
-			elements[id] = {element:element, onScreen: false};
+			elements[id] = {element:element, onScreen: false, mustShow: mustShow, ignoreIfFirst: ignoreIfFirst};
 			this.noElements++;
 			this.lastElementId = id;
 			return id;
@@ -104,6 +106,7 @@
 			{
 				return;
 			}
+			justStarted = true;
 			this.running = true;
 		}
 		
@@ -139,9 +142,30 @@
 			return this.noElements;
 		}
 		
+		public function getRemainingElements():int
+		{
+			return elements.length;
+		}
+		
 		public function getOnScreen():Boolean
 		{
 			return this.onScreen;
+		}
+		
+		public function getNoElementsOnScreen():int
+		{
+			var count:int = 0;
+			for (var i:String in this.elements)
+			{
+				if (this.elements[i].onScreen)
+				{
+					count++;
+				}
+				else {
+					break;
+				}
+			}
+			return count;
 		}
 		
 		public function getIsRunning():Boolean
@@ -155,20 +179,25 @@
 			
 			if (this.stopImmediatey)
 			{
-				// remove any elements that are on screen
+				// remove any elements that are on screen or any subsequent elements that has mustShow set
 				this.stopImmediatey = false;
+				nextElementMustShow = false;
 				for (var i:String in this.elements)
 				{
-					if (this.elements[i].onScreen)
+					if (this.elements[i].onScreen || this.elements[i].mustShow)
 					{
 						this.elements[i].onScreen = false; // removeElement() will only remove off screen
 						removeElement(i);
+					}
+					else
+					{
+						break;
 					}
 				}
 			}
 			else
 			{
-				if (getIsRunning())
+				if (getIsRunning() || nextElementMustShow)
 				{
 					// determine if next element needs to be added
 					var lastElement:Object; // last element on screen
@@ -176,20 +205,29 @@
 					var nextElement:Object;
 					var found:Boolean = false;
 					var foundNextElement:Boolean = false;
+					nextElementMustShow = false;
 					
 					for (var i:String in this.elements)
 					{
-						if (this.elements[i].onScreen)
+						if (foundNextElement) {
+							// now on the next element so check if it must be shown
+							nextElementMustShow = this.elements[i].mustShow;
+							break;
+						}
+						else if (this.elements[i].onScreen)
 						{
 							found = true;
 							lastElement = this.elements[i];
 							lastElementId = i;
 						}
+						else if (justStarted && this.elements[i].ignoreIfFirst)
+						{
+							removeElement(i);
+						}
 						else
 						{
 							nextElement = this.elements[i];
 							foundNextElement = true;
-							break;
 						}
 					}
 					// if not found an element on screen OR the last element on screen is now completley on screen
@@ -199,7 +237,6 @@
 						{
 							// set the position off screen to start
 							nextElement.element.x = this.theWidth;
-							nextElement.element.y = 0;
 							nextElement.onScreen = true;
 							this.addChildAt(nextElement.element,0);
 							this.onScreen = true; // update global on screen status
@@ -210,6 +247,7 @@
 							dispatchEvent(new Event(Scroller.NO_MORE_ELEMENTS));
 						}
 					}
+					justStarted = false;
 				}
 				// shift everything on screen across to left and remove if results in off screen
 				for (var i:String in this.elements)
