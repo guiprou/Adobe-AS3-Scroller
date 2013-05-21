@@ -187,7 +187,7 @@
 				return 0;
 			}
 			else {
-				var val:Number = lastElement.x + lastElement.width;
+				var val:Number = lastElement.x + lastElement.width + spacing;
 				return val > theWidth ? theWidth : val;
 			}
 		}
