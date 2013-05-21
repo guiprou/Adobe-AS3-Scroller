@@ -109,10 +109,6 @@
 		
 		public function stop(immediately:Boolean=false):void
 		{
-			if (!getIsRunning())
-			{
-				return;
-			}
 			this.running = false;
 			if (immediately)
 			{
