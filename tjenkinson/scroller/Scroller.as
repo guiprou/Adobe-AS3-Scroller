@@ -10,7 +10,7 @@
 	public class Scroller extends Sprite
 	{
 		private var theWidth:Number;
-		private var elements:Object = new Object();
+		private var elements:Array = [];
 		private var speed:Number; // pixels per second
 		private var moveAmount:Number; //speed / framerate
 		private var lastElementId:int; // this will always increase so there will always be unique ids
@@ -62,24 +62,30 @@
 		public function addElement(element:DisplayObject, mustShow:Boolean=false, ignoreIfFirst:Boolean=false):int
 		{
 			var id:int = (getNoElements() !== 0) ? getLastElementId()+1 : 0;
-			elements[id] = {element:element, onScreen: false, mustShow: mustShow, ignoreIfFirst: ignoreIfFirst};
+			elements.push({id: id, element:element, onScreen: false, mustShow: mustShow, ignoreIfFirst: ignoreIfFirst});
 			this.noElements++;
 			this.lastElementId = id;
 			return id;
 		}
 		
-		public function removeElement(id:String):void
+		public function removeElement(id:int):void
 		{
-			if (!(id in this.elements))
+			var index:int = getArrayIndex(id);
+			if (index == -1)
 			{
 				throw new Error("No elements exists with that id.");
 			}
-			if (this.elements[id].onScreen)
+			removeElementIndex(index);
+		}
+		
+		private function removeElementIndex(index:int)
+		{
+			if (this.elements[index].onScreen)
 			{
 				throw new Error("Cannot remove element because it's on screen.");
 			}
-			this.elements[id].element.visible = false; // hide the element
-			delete elements[id];
+			var id:int = this.elements[index].id;
+			elements.splice(index, 1);
 			dispatchEvent(new ElementRemovedEvent(Scroller.ELEMENT_REMOVED, id, false, false));
 		}
 		
@@ -125,7 +131,7 @@
 			{
 				throw new Error("Can't remove all elements because I'm still running.");
 			}
-			elements = new Object();
+			elements = [];
 		}
 		
 		private function getLastElementId():int
@@ -155,9 +161,9 @@
 		public function getNoElementsOnScreen():int
 		{
 			var count:int = 0;
-			for (var i:String in this.elements)
+			for (var i:int=0; i<elements.length; i++)
 			{
-				if (this.elements[i].onScreen)
+				if (elements[i].onScreen)
 				{
 					count++;
 				}
@@ -176,11 +182,11 @@
 		public function getActualWidth():Number
 		{
 			var lastElement:DisplayObject = null;
-			for (var i:String in this.elements)
+			for (var i:int=0; i<elements.length; i++)
 			{
-				if (this.elements[i].onScreen)
+				if (elements[i].onScreen)
 				{
-					lastElement = this.elements[i].element;
+					lastElement = elements[i].element;
 				}
 			}
 			if (lastElement == null) {
@@ -201,12 +207,12 @@
 				// remove any elements that are on screen or any subsequent elements that has mustShow set
 				this.stopImmediatey = false;
 				nextElementMustShow = false;
-				for (var i:String in this.elements)
+				for (var i:int=0; i<elements.length; i++)
 				{
-					if (this.elements[i].onScreen || this.elements[i].mustShow)
+					if (elements[i].onScreen || elements[i].mustShow)
 					{
-						this.elements[i].onScreen = false; // removeElement() will only remove off screen
-						removeElement(i);
+						elements[i].onScreen = false; // removeElement() will only remove off screen
+						removeElementIndex(i);
 					}
 					else
 					{
@@ -220,32 +226,30 @@
 				{
 					// determine if next element needs to be added
 					var lastElement:Object; // last element on screen
-					var lastElementId:String;
 					var nextElement:Object;
 					var found:Boolean = false;
 					var foundNextElement:Boolean = false;
 					nextElementMustShow = false;
 					
-					for (var i:String in this.elements)
+					for (var i:int=0; i<elements.length; i++)
 					{
 						if (foundNextElement) {
 							// now on the next element so check if it must be shown
-							nextElementMustShow = this.elements[i].mustShow;
+							nextElementMustShow = elements[i].mustShow;
 							break;
 						}
-						else if (this.elements[i].onScreen)
+						else if (elements[i].onScreen)
 						{
 							found = true;
-							lastElement = this.elements[i];
-							lastElementId = i;
+							lastElement = elements[i];
 						}
-						else if (justStarted && this.elements[i].ignoreIfFirst)
+						else if (justStarted && elements[i].ignoreIfFirst)
 						{
-							removeElement(i);
+							removeElementIndex(i);
 						}
 						else
 						{
-							nextElement = this.elements[i];
+							nextElement = elements[i];
 							foundNextElement = true;
 						}
 					}
@@ -270,16 +274,16 @@
 					justStarted = false;
 				}
 				// shift everything on screen across to left and remove if results in off screen
-				for (var i:String in this.elements)
+				for (var i:int=0; i<elements.length; i++)
 				{
-					if (this.elements[i].onScreen)
+					if (elements[i].onScreen)
 					{
-						this.elements[i].element.x -= this.moveAmount; // move it
-						if (this.elements[i].element.x + this.elements[i].element.width < 0)
+						elements[i].element.x -= this.moveAmount; // move it
+						if (elements[i].element.x + elements[i].element.width < 0)
 						{
-							this.elements[i].onScreen = false; // removeElement() will only remove offscreen
-							this.removeChild(this.elements[i].element); // remove element
-							removeElement(i);
+							elements[i].onScreen = false; // removeElement() will only remove offscreen
+							removeChild(this.elements[i].element); // remove element
+							removeElementIndex(i);
 						}
 					}
 				}
@@ -287,20 +291,32 @@
 			}
 			// update global onScreen
 			var found:Boolean = false;
-			for (var i:String in this.elements)
+			for (var i:int=0; i<elements.length; i++)
 			{
-				if (this.elements[i].onScreen)
+				if (elements[i].onScreen)
 				{
 					found = true;
 					break;
 				}
 			}
 			
-			if (!found && this.onScreen)
+			if (!found && onScreen)
 			{
 				dispatchEvent(new Event(Scroller.LAST_OFF_SCREEN));
 			}
 			this.onScreen = found;
+		}
+		
+		private function getArrayIndex(id:int)
+		{
+			for (var i:int=0; i<elements.length; i++)
+			{
+				if (elements[i].id == id)
+				{
+					return i;
+				}
+			}
+			return -1;
 		}
 		
 	}
