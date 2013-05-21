@@ -5,6 +5,7 @@
 	import flash.display.Shape;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.display.DisplayObject;
 	
 	public class Scroller extends Sprite
 	{
@@ -31,6 +32,8 @@
 			// create the mask around object
 			this.theMask = new Shape();
 			updateMask(0, true);
+			this.theMask.visible = false;
+			addChild(this.theMask);
 			this.mask = this.theMask;
 			
 			addEventListener(Event.ADDED_TO_STAGE, function(e:Event){init(e, speed, spacing);});
@@ -50,11 +53,11 @@
 				return; // only redraw the mask if necessary
 			}
 			theMask.graphics.beginFill(0x0);
-			theMask.graphics.drawRect(x, y, theWidth, theMskHeight);
+			theMask.graphics.drawRect(0, 0, theWidth, theMskHeight);
 			theMask.graphics.endFill();
 		}
 	
-		public function addElement(element:MovieClip):int
+		public function addElement(element:DisplayObject):int
 		{
 			var id:int = (getNoElements() !== 0) ? getLastElementId()+1 : 0;
 			elements[id] = {element:element, onScreen: false};
