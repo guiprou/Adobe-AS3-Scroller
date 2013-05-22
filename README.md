@@ -10,7 +10,6 @@ stop() can be called at any time and any elements currently on screen will conti
 There are still a few bugs that I've found:
 - If the top left point of the contents of an object that is added to the scroller doesn't touch the registration point.
 - With text the mask that is generated sometimes seems to chop off the bottom. It seems to be calculating the height wrong.
-- Occasionaly two elements are loaded on screen at the same time and scroll accross overlapping each other.
 
 If you find any other bugs or have a solution to the ones above please let me know!
 
