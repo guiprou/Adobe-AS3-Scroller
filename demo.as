@@ -7,11 +7,11 @@
 	import tjenkinson.scroller.ElementRemovedEvent;
 	
 	
-	public class demo extends MovieClip {
+	public class Demo extends MovieClip {
 		
 		private var scroller:Scroller;
 		
-		public function demo() {
+		public function Demo() {
 			
 			// create the scroller object
 			scroller = new Scroller(400, 100, 10);
