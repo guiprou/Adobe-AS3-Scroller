@@ -229,6 +229,7 @@
 					var nextElement:Object;
 					var found:Boolean = false;
 					var foundNextElement:Boolean = false;
+					var elementsToRemove:Array = [];
 					nextElementMustShow = false;
 					
 					for (var i:int=0; i<elements.length; i++)
@@ -245,13 +246,18 @@
 						}
 						else if (justStarted && elements[i].ignoreIfFirst)
 						{
-							removeElementIndex(i);
+							elementsToRemove.push(i);
 						}
 						else
 						{
 							nextElement = elements[i];
 							foundNextElement = true;
 						}
+					}
+					// elements must be removed here and not in loop bacause it changes indexing
+					for (var i:int=0; i<elementsToRemove.length; i++)
+					{
+						removeElementIndex(elementsToRemove[i]);
 					}
 					// if not found an element on screen OR the last element on screen is now completley on screen
 					if (!found || lastElement.element.x+lastElement.element.width+this.spacing < this.theWidth) // ready to add one
