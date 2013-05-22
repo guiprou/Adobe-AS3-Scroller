@@ -150,7 +150,23 @@
 		
 		public function getRemainingElements():int
 		{
-			return elements.length;
+			var count:int = elements.length;
+			if (!getIsRunning())
+			{
+				// any elements that are meant to be ignored will be so deduct them from remaining elements
+				for (var i:int=0; i<elements.length; i++)
+				{
+					if (elements[i].ignoreIfFirst)
+					{
+						count--;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+			return count;
 		}
 		
 		public function getOnScreen():Boolean
@@ -207,17 +223,26 @@
 				// remove any elements that are on screen or any subsequent elements that has mustShow set
 				this.stopImmediatey = false;
 				nextElementMustShow = false;
+				var elementsToRemove:Array = [];
 				for (var i:int=0; i<elements.length; i++)
 				{
 					if (elements[i].onScreen || elements[i].mustShow)
 					{
+						if (elements[i].onScreen)
+						{
+							removeChild(elements[i].element);
+						}
 						elements[i].onScreen = false; // removeElement() will only remove off screen
-						removeElementIndex(i);
+						elementsToRemove.push(i);
 					}
 					else
 					{
 						break;
 					}
+				}
+				for(var i:int=elementsToRemove.length-1; i>=0; i--)
+				{
+					removeElementIndex(elementsToRemove[i]);
 				}
 			}
 			else
@@ -234,12 +259,7 @@
 					
 					for (var i:int=0; i<elements.length; i++)
 					{
-						if (foundNextElement) {
-							// now on the next element so check if it must be shown
-							nextElementMustShow = elements[i].mustShow;
-							break;
-						}
-						else if (elements[i].onScreen)
+						if (elements[i].onScreen)
 						{
 							found = true;
 							lastElement = elements[i];
@@ -251,11 +271,13 @@
 						else
 						{
 							nextElement = elements[i];
+							nextElementMustShow = elements[i].mustShow;
 							foundNextElement = true;
+							break;
 						}
 					}
-					// elements must be removed here and not in loop bacause it changes indexing
-					for (var i:int=0; i<elementsToRemove.length; i++)
+					// elements must be removed here and not in loop bacause it changes indexing. must be in reverse
+					for (var i:int=elementsToRemove.length-1; i>=0; i--)
 					{
 						removeElementIndex(elementsToRemove[i]);
 					}
