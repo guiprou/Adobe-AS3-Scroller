@@ -151,7 +151,11 @@
 			{
 				return;
 			}
-			justStarted = true;
+			//check stopping and starting has had an effect
+			if (!wouldBeContinuous())
+			{
+				justStarted = true;
+			}
 			this.running = true;
 		}
 		
@@ -281,11 +285,6 @@
 		// runs on each frame
 		private function timerTick(e:Event):void
 		{
-			// essentially stopping and starting has had no effect
-			if (justStarted && wouldBeContinuous())
-			{
-				justStarted = false;
-			}
 			if (this.stopImmediatey)
 			{
 				// remove any elements that are on screen or any subsequent elements that has mustShow set
