@@ -22,6 +22,9 @@
 		private var theMask:Shape;
 		private var nextElementMustShow:Boolean = false;
 		private var justStarted:Boolean = false;
+		private var timeRemaining:Number = 0; // the time remaining before run out of elements
+		
+		private var bufferListeners:Vector.<BufferListener> = new Vector.<BufferListener>();
 		
 		// events
 		public static const NO_MORE_ELEMENTS:String = "NO_MORE_ELEMENTS"; // stopped automatically bevause ran out of elements
@@ -39,6 +42,33 @@
 			this.mask = this.theMask;
 			
 			addEventListener(Event.ADDED_TO_STAGE, function(e:Event){init(e, speed, spacing);});
+		}
+		
+		// the function passed in will be called whenever more elements are needed to keep a buffer of the time passed in
+		// the listener will be called once and then wait until addElement is called before any future calls
+		public function addBufferListener(f:Function, p:Array, t:Number):uint
+		{
+			var bufferListener:BufferListener = new BufferListener(f, p, t);
+			bufferListeners.push(bufferListener);
+			return bufferListener.getId();
+		}
+		
+		public function removeBufferListener(id:uint):void
+		{
+			var found:Boolean = false;
+			for (var i:uint=0; i<bufferListeners.length; i++)
+			{
+				if (bufferListeners[i].getId() == id)
+				{
+					bufferListeners.splice(i, 1);
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				throw new Error("The buffer listener could not be removed as it doesn't exist.");
+			}
 		}
 		
 		private function init(e:Event, speed:Number, spacing:Number)
@@ -65,6 +95,10 @@
 			elements.push({id: id, element:element, onScreen: false, mustShow: mustShow, ignoreIfFirst: ignoreIfFirst});
 			this.noElements++;
 			this.lastElementId = id;
+			for(var i:uint=0; i<bufferListeners.length; i++)
+			{
+				bufferListeners[i].clearFlag();
+			}
 			return id;
 		}
 		
@@ -76,6 +110,11 @@
 				throw new Error("No elements exists with that id.");
 			}
 			removeElementIndex(index);
+		}
+		
+		public function getTimeRemaining():Number
+		{
+			return timeRemaining;
 		}
 		
 		private function removeElementIndex(index:int)
@@ -151,7 +190,7 @@
 		public function getRemainingElements():int
 		{
 			var count:int = elements.length;
-			if (!getIsRunning())
+			if (!wouldBeContinuous())
 			{
 				// any elements that are meant to be ignored will be so deduct them from remaining elements
 				for (var i:int=0; i<elements.length; i++)
@@ -213,11 +252,40 @@
 				return val > theWidth ? theWidth : val;
 			}
 		}
+		
+		// returns true if starting scrolling again would not result in a gap.
+		private function wouldBeContinuous():Boolean
+		{
+			if (getIsRunning())
+			{
+				return true;
+			}
+			
+			var lastElement:Object = null;
+			for (var i:int=0; i<elements.length; i++)
+			{
+				if (elements[i].onScreen)
+				{
+					lastElement = elements[i];
+				}
+				else
+				{
+					break;
+				}
+			}
+			
+			// if it can't find the last element on screen (which should never happen!) OR the last element on screen is now completley on screen
+			return (!(lastElement == null || lastElement.element.x+lastElement.element.width+this.spacing < this.theWidth));
+		}
 	
 		// runs on each frame
 		private function timerTick(e:Event):void
 		{
-			
+			// essentially stopping and starting has had no effect
+			if (justStarted && wouldBeContinuous())
+			{
+				justStarted = false;
+			}
 			if (this.stopImmediatey)
 			{
 				// remove any elements that are on screen or any subsequent elements that has mustShow set
@@ -333,6 +401,49 @@
 				dispatchEvent(new Event(Scroller.LAST_OFF_SCREEN));
 			}
 			this.onScreen = found;
+			
+			// calculate the amount of time left (milliseconds) in the scroller until the last element appears fully on screen
+			var distanceRemaining:Number = 0;
+			var lastOnScreen:Object = null;
+			var hadFirstPending:Boolean = false;
+			
+			for (var i:int=0; i<elements.length; i++)
+			{
+				// if there is something on screen and the current element is on screen. onScreen check is for efficiency
+				if (onScreen && elements[i].onScreen)
+				{
+					lastOnScreen = elements[i];
+				}
+				else
+				{
+					// element that's not on screen
+					
+					// only consider elements that will be shown
+					if (hadFirstPending || (wouldBeContinuous() || !elements[i].ignoreIfFirst))
+					{
+						hadFirstPending = true;
+						distanceRemaining += elements[i].element.width;
+					}
+				}
+			}
+			// timeRemaining is now the time of all pending elements
+			
+			// now add distance remaining for last scrolling element
+			if (lastOnScreen != null)
+			{
+				distanceRemaining += (lastOnScreen.element.x + lastOnScreen.element.width + this.spacing) - this.theWidth;
+			}
+			var tempTimeRemaining:Number = (distanceRemaining / speed) * 1000;
+			timeRemaining = tempTimeRemaining > 0 ? tempTimeRemaining : 0;
+			
+			// call any buffer listeners
+			for(var i:int=0; i<bufferListeners.length; i++)
+			{
+				if (timeRemaining <= bufferListeners[i].getTime())
+				{
+					bufferListeners[i].callListener();
+				}
+			}
 		}
 		
 		private function getArrayIndex(id:int):int
@@ -347,5 +458,51 @@
 			return -1;
 		}
 		
+	}
+}
+
+
+class BufferListener
+{
+	private static var idCount:uint = 0;
+	
+	private var f:Function;
+	private var p:Array; // params
+	private var t:Number;
+	private var id:uint;
+	private var fnCalled:Boolean = false;
+	
+	public function BufferListener(f:Function, p:Array, t:Number):void
+	{
+		this.f = f;
+		this.p = p;
+		this.t = t;
+		this.id = idCount;
+		idCount++;
+	}
+	
+	public function callListener():void
+	{
+		if (fnCalled)
+		{
+			return;
+		}
+		fnCalled = true;
+		f.apply(NaN, p);
+	}
+
+	public function getTime():Number
+	{
+		return t;
+	}
+	
+	public function getId():uint
+	{
+		return id;
+	}
+	
+	public function clearFlag():void
+	{
+		fnCalled = false;
 	}
 }

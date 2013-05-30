@@ -27,6 +27,16 @@
 			scroller.addEventListener(Scroller.LAST_OFF_SCREEN, lastOffScreen);
 			scroller.addEventListener(Scroller.ELEMENT_REMOVED, elementRemoved);
 			
+			// create a listener that will be called whenever the amount of content remaining in the scroller falls below 1 second
+			// this is useful if you are grabbing the content from an external source such as a database
+			// you would request the next item a bit before the elements run out.
+			var bufferListenerId = scroller.addBufferListener(function() {
+				trace("Adding item3 because less than 1 second of content left in buffer.");								
+				scroller.addElement(new Item3());
+			}, [], 1000);
+			
+			// a listener can be removed with scroller.removeBufferListener(bufferListenerId);
+			
 			// Start the scroller
 			scroller.start();
 		}
