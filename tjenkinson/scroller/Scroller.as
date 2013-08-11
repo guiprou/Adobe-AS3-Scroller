@@ -33,6 +33,7 @@
 		
 		public function Scroller(theWidth:Number, speed:Number, spacing:Number=10)
 		{
+			this.cacheAsBitmap = true;
 			this.theWidth = theWidth;
 			// create the mask around object
 			this.theMask = new Shape();
@@ -71,6 +72,17 @@
 			}
 		}
 		
+		public function setWidth(w:Number):void {
+			if(getIsRunning()) {
+				throw new Error("You can't change the width whilst the scroller is running.");
+			}
+			else if (getNoElementsOnScreen() !== 0) {
+				throw new Error("You can't change the width whilst there are still elements scrolling.");
+			}
+			theWidth = w;
+			updateMask(0, true);
+		}
+		
 		private function init(e:Event, speed:Number, spacing:Number)
 		{
 			setSpeed(speed);
@@ -83,6 +95,9 @@
 			if (!firstRun && theMskHeight <= theMask.height)
 			{
 				return; // only redraw the mask if necessary
+			}
+			if (firstRun) {
+				theMask.graphics.clear();
 			}
 			theMask.graphics.beginFill(0x0);
 			theMask.graphics.drawRect(0, 0, theWidth, theMskHeight);
@@ -125,7 +140,7 @@
 			}
 			var id:int = this.elements[index].id;
 			elements.splice(index, 1);
-			dispatchEvent(new ElementRemovedEvent(Scroller.ELEMENT_REMOVED, id, false, false));
+			dispatchEvent(new ElementRemovedEvent(Scroller.ELEMENT_REMOVED, id, true, true));
 		}
 		
 		public function setSpeed(speed:Number):void
@@ -165,6 +180,7 @@
 			if (immediately)
 			{
 				this.stopImmediatey = true;
+				timerTick(); // don't wait for next frame. this means that when this function finishes it will definately have stopped
 			}
 		}
 		
@@ -283,7 +299,7 @@
 		}
 	
 		// runs on each frame
-		private function timerTick(e:Event):void
+		private function timerTick(e:Event=null):void
 		{
 			if (this.stopImmediatey)
 			{
@@ -363,7 +379,7 @@
 						else // there are no more elements to add
 						{
 							stop();
-							dispatchEvent(new Event(Scroller.NO_MORE_ELEMENTS));
+							dispatchEvent(new Event(Scroller.NO_MORE_ELEMENTS, true, true));
 						}
 					}
 					justStarted = false;
@@ -397,7 +413,7 @@
 			
 			if (!found && onScreen)
 			{
-				dispatchEvent(new Event(Scroller.LAST_OFF_SCREEN));
+				dispatchEvent(new Event(Scroller.LAST_OFF_SCREEN, true, true));
 			}
 			this.onScreen = found;
 			
