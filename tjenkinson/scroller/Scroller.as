@@ -364,8 +364,8 @@
 					{
 						removeElementIndex(elementsToRemove[i]);
 					}
-					// if not found an element on screen OR the last element on screen is now completley on screen
-					if (!found || lastElement.element.x+lastElement.element.width+this.spacing < this.theWidth) // ready to add one
+					// if not found an element on screen OR the last element on screen will be completley on screen in next shift
+					if (!found || lastElement.element.x+lastElement.element.width+this.spacing-this.moveAmount < this.theWidth) // ready to add one
 					{
 						if (foundNextElement)
 						{
@@ -385,6 +385,7 @@
 					justStarted = false;
 				}
 				// shift everything on screen across to left and remove if results in off screen
+				var elementIndexesToRemove:Array = new Array();
 				for (var i:int=0; i<elements.length; i++)
 				{
 					if (elements[i].onScreen)
@@ -392,11 +393,14 @@
 						elements[i].element.x -= this.moveAmount; // move it
 						if (elements[i].element.x + elements[i].element.width < 0)
 						{
-							elements[i].onScreen = false; // removeElement() will only remove offscreen
-							removeChild(this.elements[i].element); // remove element
-							removeElementIndex(i);
+							elementIndexesToRemove.push(i);
 						}
 					}
+				}
+				for each (var i:int in elementIndexesToRemove) {
+					elements[i].onScreen = false; // removeElement() will only remove offscreen
+					removeChild(this.elements[i].element); // remove element
+					removeElementIndex(i);
 				}
 				updateMask(this.height);
 			}
